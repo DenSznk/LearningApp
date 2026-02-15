@@ -18,6 +18,11 @@ export function Header() {
         </div>
 
         <nav className="flex items-center gap-4">
+            <Link href="/questions">
+             <Button variant="ghost" size="sm" className="gap-2">
+                Questions
+             </Button>
+           </Link>
            <Link href="/">
              <Button variant="ghost" size="sm" className="gap-2">
                 <Home className="w-4 h-4" /> Home
