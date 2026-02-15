@@ -19,7 +19,6 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Decorative gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-background to-cyan-500/5 pointer-events-none" />
 
       <main className="relative container mx-auto px-4 py-16 md:py-24">
@@ -37,7 +36,6 @@ export default async function Home() {
                  <ExamCard key={exam.id} id={exam.id} title={exam.title} topics={exam.topics} />
              ))}
 
-             {/* Coming Soon Card */}
              <div className="border-2 border-dashed border-muted rounded-xl flex items-center justify-center p-8 opacity-50 hover:opacity-100 transition-opacity">
                  <span className="text-muted-foreground font-medium">More Exams Coming Soon</span>
              </div>
