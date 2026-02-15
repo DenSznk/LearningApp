@@ -1,0 +1,32 @@
+[
+    {
+        "topic": "JavaScript",
+        "exam": "Frontend Basics",
+        "questions": [
+            {
+                "text": "What is the difference between let, const, and var?",
+                "difficulty": "easy",
+                "answer": "`var` is function scoped and hoisted. `let` and `const` are block scoped. `const` cannot be reassigned.",
+                "week": "Week 1"
+            },
+            {
+                "text": "Explain closures in JavaScript.",
+                "difficulty": "medium",
+                "answer": "A closure is the combination of a function bundled together (enclosed) with references to its surrounding state (the lexical environment).",
+                "week": "Week 1"
+            }
+        ]
+    },
+    {
+        "topic": "React",
+        "exam": "Frontend Basics",
+        "questions": [
+            {
+                "text": "What is the Virtual DOM?",
+                "difficulty": "easy",
+                "answer": "The Virtual DOM is a programming concept where a virtual representation of the UI is kept in memory and synced with the 'real' DOM by a library such as ReactDOM.",
+                "week": "Week 2"
+            }
+        ]
+    }
+]

@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Exam {
+  id     String  @id
+  title  String
+  topics Topic[]
+}
+
+model Topic {
+  id        String     @id @default(cuid())
+  name      String
+  examId    String
+  exam      Exam       @relation(fields: [examId], references: [id])
+  questions Question[]
+
+  @@unique([examId, name])
+}
+
+model Question {
+  id          String      @id
+  text        String
+  difficulty  String
+  answer      String?
+  week        String?
+  topicId     String
+  topic       Topic       @relation(fields: [topicId], references: [id])
+}
