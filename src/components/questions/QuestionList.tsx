@@ -6,11 +6,11 @@ import { SkillSet, TOPICS } from '@/lib/data';
 import { fetchSkillSet } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 import { QuestionCard } from '@/components/exam/QuestionCard';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { QuestionCardSkeleton } from '@/components/exam/QuestionCardSkeleton';
 import {
   Select,
   SelectContent,
@@ -26,7 +26,6 @@ interface QuestionListProps {
   showControls?: boolean;
 }
 
-// ... imports
 
 export function QuestionList({ skillSets, showControls = true }: QuestionListProps) {
   const router = useRouter();
@@ -55,35 +54,17 @@ export function QuestionList({ skillSets, showControls = true }: QuestionListPro
 
   const [selectedSkillSet, setSelectedSkillSet] = useState<SkillSet | null>(null);
   const [selectedLevelId, setSelectedLevelId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [topicFilter, setTopicFilter] = useState('all');
-  const [sortBy, setSortBy] = useState<'default' | 'week' | 'topic'>('default');
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
   const uniqueTopics = Array.from(new Set(skillSets.map(s => s.topic))).sort();
 
   const sorted = [...skillSets]
-    .filter(s => topicFilter === 'all' || s.topic === topicFilter)
-    .sort((a, b) => {
-    if (sortBy === 'week') {
-      const weekA = parseInt(a.week?.replace(/\D/g, '') || '999');
-      const weekB = parseInt(b.week?.replace(/\D/g, '') || '999');
-      return weekA - weekB;
-    }
-    if (sortBy === 'topic') {
-      const indexA = TOPICS.indexOf(a.topic as any);
-      const indexB = TOPICS.indexOf(b.topic as any);
-      const validIndexA = indexA === -1 ? 999 : indexA;
-      const validIndexB = indexB === -1 ? 999 : indexB;
-
-      if (validIndexA !== validIndexB) {
-        return validIndexA - validIndexB;
-      }
-      return a.topic.localeCompare(b.topic);
-    }
-    return 0;
-  });
+    .filter(s => topicFilter === 'all' || s.topic === topicFilter);
 
   const handleOpen = async (skillSet: SkillSet) => {
+    setIsModalOpen(true);
     setIsLoadingDetails(true);
     try {
         const details = await fetchSkillSet(skillSet.id);
@@ -135,6 +116,59 @@ export function QuestionList({ skillSets, showControls = true }: QuestionListPro
   const hasNext = currentIndex < sorted.length - 1;
   const hasPrev = currentIndex > 0;
 
+  if (selectedSkillSet) {
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto animate-in fade-in slide-in-from-right-8 duration-300">
+        <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
+          <span>Question {currentIndex + 1} of {sorted.length}</span>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedSkillSet(null)}>
+            Back to Questions
+          </Button>
+        </div>
+
+        {isLoadingDetails ? (
+           <QuestionCardSkeleton />
+        ) : !activeQuestion ? (
+           <div className="p-8 text-center bg-card border rounded-lg">
+             No question available for this level.
+           </div>
+        ) : (
+          <div className="space-y-6 bg-card border rounded-lg shadow-sm overflow-hidden">
+             <div className="p-4 border-b bg-muted/20 flex gap-2 flex-wrap">
+                 {Object.keys(selectedSkillSet.levels || {}).map((levelKey) => (
+                     <Button
+                        key={levelKey}
+                        variant={selectedLevelId === levelKey ? "secondary" : "ghost"}
+                        size="sm"
+                        onClick={() => setSelectedLevelId(levelKey)}
+                        className="text-xs"
+                     >
+                        Level {levelKey}
+                     </Button>
+                 ))}
+             </div>
+
+             <div className="p-4">
+               <QuestionCard
+                   question={activeQuestion as any}
+                   className="shadow-none border-0 rounded-none bg-transparent"
+               />
+             </div>
+
+             <div className="p-4 border-t bg-muted/20 flex justify-between items-center shrink-0">
+                 <Button variant="outline" onClick={handlePrev} disabled={!hasPrev}>
+                   Previous
+                 </Button>
+                 <Button variant="outline" onClick={handleNext} disabled={!hasNext}>
+                   Next
+                 </Button>
+             </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {showControls && (
@@ -157,16 +191,6 @@ export function QuestionList({ skillSets, showControls = true }: QuestionListPro
             {uniqueTopics.map(t => (
                <SelectItem key={t} value={t}>{t}</SelectItem>
             ))}
-          </SelectContent>
-        </Select>
-        <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-             <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="default">Default</SelectItem>
-            <SelectItem value="week">Week</SelectItem>
-            <SelectItem value="topic">Topic</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -201,68 +225,6 @@ export function QuestionList({ skillSets, showControls = true }: QuestionListPro
             </div>
         )}
       </div>
-
-      <Dialog open={!!selectedSkillSet} onOpenChange={(open) => !open && setSelectedSkillSet(null)}>
-        <DialogContent className="max-w-3xl p-0 sm:max-w-[920px] overflow-hidden flex flex-col max-h-[90vh]">
-          {isLoadingDetails ? (
-              <div className="p-8 text-center">
-                <DialogTitle className="sr-only">Loading...</DialogTitle>
-                Loading details...
-              </div>
-          ) : !selectedSkillSet || !activeQuestion ? (
-              <div className="p-8 text-center">
-                <DialogTitle className="sr-only">No Content</DialogTitle>
-                No question available for this level.
-              </div>
-          ) : (
-            <>
-              <DialogTitle className="sr-only">{selectedSkillSet.topic} - {selectedSkillSet.theme}</DialogTitle>
-              <div className="p-4 border-b bg-muted/20 flex gap-2 overflow-x-auto">
-                 {selectedSkillSet.levels && Object.keys(selectedSkillSet.levels).map((levelKey) => (
-                     <Button
-                        key={levelKey}
-                        variant={selectedLevelId === levelKey ? "secondary" : "ghost"}
-                        size="sm"
-                        onClick={() => {
-                            setSelectedLevelId(levelKey);
-                        }}
-                        className="text-xs"
-                     >
-                        Level {levelKey}
-                     </Button>
-                 ))}
-              </div>
-
-              <div className="flex-1 overflow-y-auto">
-                <QuestionCard
-                    question={activeQuestion as any}
-                    className="shadow-none border-0 rounded-none bg-transparent"
-                />
-              </div>
-
-              <div className="p-4 border-t bg-muted/20 flex justify-between items-center shrink-0">
-                  <Button
-                    variant="outline"
-                    onClick={handlePrev}
-                    disabled={!hasPrev}
-                  >
-                    Previous
-                  </Button>
-                  <span className="text-xs text-muted-foreground">
-                    {currentIndex + 1} of {sorted.length}
-                  </span>
-                  <Button
-                    variant="outline"
-                    onClick={handleNext}
-                    disabled={!hasNext}
-                  >
-                    Next
-                  </Button>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

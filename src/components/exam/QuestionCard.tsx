@@ -53,44 +53,51 @@ export function QuestionCard({ question, className }: QuestionCardProps) {
              </Badge>
            </div>
         </div>
-        <CardTitle className="text-2xl font-bold leading-tight">{question.text}</CardTitle>
         {question.skill && (
           <div className="mt-2 text-sm text-muted-foreground bg-muted/30 p-2 rounded-md">
             <span className="font-semibold block text-xs uppercase mb-1">Key Skills:</span>
-            {question.skill}
+            {question.skill.split('\n').map((line, i) => (
+              <React.Fragment key={i}>
+                {line}
+                {i !== question.skill!.split('\n').length - 1 && <br />}
+              </React.Fragment>
+            ))}
           </div>
         )}
+      </CardHeader>
+      <CardContent className="space-y-6">
+
         {question.shortAnswer && (
-          <div className="mt-4 p-5 bg-muted/40 border rounded-lg text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
+          <div className="p-5 bg-muted/40 border rounded-lg text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
             <span className="font-semibold block mb-2 text-foreground">Key Definition</span>
             <ReactMarkdown components={markdownComponents}>{question.shortAnswer}</ReactMarkdown>
           </div>
         )}
-      </CardHeader>
-      <CardContent>
-        {/* Placeholder for answers or thoughts removed */}
+
+        <div className="p-5 bg-primary/5 border border-primary/20 rounded-lg text-base text-foreground font-medium flex flex-col">
+          <span className="font-semibold block mb-2 text-primary text-sm">Question</span>
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown components={markdownComponents}>{question.text.replace(/\n/g, '  \n')}</ReactMarkdown>
+          </div>
+        </div>
+
+
+
+        {question.answer && (
+          <div className="p-5 bg-muted/40 border rounded-lg text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
+           <span className="font-semibold block mb-2 text-foreground">Answer</span>
+           <ReactMarkdown components={markdownComponents}>{question.answer}</ReactMarkdown>
+          </div>
+        )}
 
         {question.codeExample && (
-          <div className="mb-6 rounded-lg overflow-hidden border">
+          <div className="rounded-lg overflow-hidden border">
             <div className="bg-zinc-950 px-4 py-2 border-b border-zinc-800">
                <span className="font-semibold text-xs text-zinc-400 uppercase tracking-wider">Code Example</span>
             </div>
             <ReactMarkdown components={markdownComponents}>
               {question.codeExample}
             </ReactMarkdown>
-          </div>
-        )}
-
-        {!question.shortAnswer && !question.codeExample && question.answer && (
-          <div className="mt-6 p-5 bg-muted/40 border rounded-lg text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
-           <span className="font-semibold block mb-2 text-foreground">Answer</span>
-           <ReactMarkdown components={markdownComponents}>{question.answer}</ReactMarkdown>
-          </div>
-        )}
-        {question.answer && (question.shortAnswer || question.codeExample) && (
-          <div className="p-5 bg-muted/40 border rounded-lg text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
-           <span className="font-semibold block mb-2 text-foreground">Answer</span>
-           <ReactMarkdown components={markdownComponents}>{question.answer}</ReactMarkdown>
           </div>
         )}
       </CardContent>
