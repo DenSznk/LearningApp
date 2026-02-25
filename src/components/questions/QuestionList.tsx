@@ -55,7 +55,6 @@ export function QuestionList({ skillSets, showControls = true }: QuestionListPro
 
   const [selectedSkillSet, setSelectedSkillSet] = useState<SkillSet | null>(null);
   const [selectedLevelId, setSelectedLevelId] = useState<string | null>(null);
-  const [showAnswer, setShowAnswer] = useState(false);
   const [topicFilter, setTopicFilter] = useState('all');
   const [sortBy, setSortBy] = useState<'default' | 'week' | 'topic'>('default');
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
@@ -90,7 +89,6 @@ export function QuestionList({ skillSets, showControls = true }: QuestionListPro
         const details = await fetchSkillSet(skillSet.id);
         setSelectedSkillSet(details);
         setSelectedLevelId('1');
-        setShowAnswer(false);
     } catch (e) {
         console.error("Failed to fetch details", e);
     } finally {
@@ -227,7 +225,6 @@ export function QuestionList({ skillSets, showControls = true }: QuestionListPro
                         size="sm"
                         onClick={() => {
                             setSelectedLevelId(levelKey);
-                            setShowAnswer(false);
                         }}
                         className="text-xs"
                      >
@@ -239,8 +236,6 @@ export function QuestionList({ skillSets, showControls = true }: QuestionListPro
               <div className="flex-1 overflow-y-auto">
                 <QuestionCard
                     question={activeQuestion as any}
-                    showAnswer={showAnswer}
-                    onToggleAnswer={() => setShowAnswer(!showAnswer)}
                     className="shadow-none border-0 rounded-none bg-transparent"
                 />
               </div>

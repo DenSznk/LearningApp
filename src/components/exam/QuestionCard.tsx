@@ -12,12 +12,10 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 interface QuestionCardProps {
   question: Question;
-  showAnswer?: boolean;
-  onToggleAnswer?: () => void;
   className?: string;
 }
 
-export function QuestionCard({ question, showAnswer, onToggleAnswer, className }: QuestionCardProps) {
+export function QuestionCard({ question, className }: QuestionCardProps) {
   const markdownComponents = {
     code({node, inline, className, children, ...props}: any) {
       const match = /language-(\w+)/.exec(className || '')
