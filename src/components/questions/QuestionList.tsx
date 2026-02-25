@@ -56,10 +56,15 @@ export function QuestionList({ skillSets, showControls = true }: QuestionListPro
   const [selectedSkillSet, setSelectedSkillSet] = useState<SkillSet | null>(null);
   const [selectedLevelId, setSelectedLevelId] = useState<string | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [topicFilter, setTopicFilter] = useState('all');
   const [sortBy, setSortBy] = useState<'default' | 'week' | 'topic'>('default');
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
-  const sorted = [...skillSets].sort((a, b) => {
+  const uniqueTopics = Array.from(new Set(skillSets.map(s => s.topic))).sort();
+
+  const sorted = [...skillSets]
+    .filter(s => topicFilter === 'all' || s.topic === topicFilter)
+    .sort((a, b) => {
     if (sortBy === 'week') {
       const weekA = parseInt(a.week?.replace(/\D/g, '') || '999');
       const weekB = parseInt(b.week?.replace(/\D/g, '') || '999');
@@ -145,6 +150,17 @@ export function QuestionList({ skillSets, showControls = true }: QuestionListPro
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <Select value={topicFilter} onValueChange={setTopicFilter}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+             <SelectValue placeholder="All Topics" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Topics</SelectItem>
+            {uniqueTopics.map(t => (
+               <SelectItem key={t} value={t}>{t}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
           <SelectTrigger className="w-full sm:w-[180px]">
              <SelectValue placeholder="Sort by" />
