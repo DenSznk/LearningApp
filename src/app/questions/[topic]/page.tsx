@@ -1,5 +1,6 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
-import { fetchQuestions } from '@/lib/api';
+import { fetchSkillSets } from '@/lib/api';
 import { QuestionList } from '@/components/questions/QuestionList';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -7,13 +8,14 @@ import { ArrowLeft } from 'lucide-react';
 export default async function TopicQuestionsPage({ params }: { params: Promise<{ topic: string }> }) {
   const { topic: rawTopic } = await params;
   const topic = decodeURIComponent(rawTopic);
-  let questions = [];
+  let skillSets: any[] = [];
 
   try {
-      // Use 'all' for difficulty and adjust limit to something high or add pagination later
-      questions = await fetchQuestions(undefined, topic, 'all', 100);
+      // Fetch all and filter by topic
+      const allSkillSets = await fetchSkillSets();
+      skillSets = allSkillSets.filter((s: any) => s.topic === topic);
   } catch (error) {
-      console.error("Failed to fetch questions", error);
+      console.error("Failed to fetch skill sets", error);
   }
 
   return (
@@ -26,11 +28,13 @@ export default async function TopicQuestionsPage({ params }: { params: Promise<{
         </Link>
         <div>
             <h1 className="text-3xl font-bold tracking-tight capitalize">{topic}</h1>
-            <p className="text-muted-foreground">{questions.length} questions available</p>
+            <p className="text-muted-foreground">{skillSets.length} themes available</p>
         </div>
       </div>
 
-      <QuestionList questions={questions} topic={topic} />
+      <Suspense fallback={<div>Loading...</div>}>
+        <QuestionList skillSets={skillSets} topic={topic} showControls={false} />
+      </Suspense>
     </div>
   );
 }

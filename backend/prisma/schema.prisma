@@ -18,7 +18,10 @@ model Topic {
   name      String
   examId    String
   exam      Exam       @relation(fields: [examId], references: [id])
-  questions Question[]
+  questions   Question[]
+  week        String?
+  shortAnswer String?
+  codeExample String?
 
   @@unique([examId, name])
 }
@@ -31,4 +34,6 @@ model Question {
   week        String?
   topicId     String
   topic       Topic       @relation(fields: [topicId], references: [id])
+  skill       String?
+  level       Int         @default(1)
 }

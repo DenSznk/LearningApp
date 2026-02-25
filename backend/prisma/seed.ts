@@ -1,124 +1,120 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import fs from 'fs';
+import path from 'path';
 
-// Hardcoded data from src/lib/data.ts to avoid import complexity with TS/Modules
-const DATA = {
-  EXAMS: [
-    { id: 'react', title: 'React Exam', topics: ['Basics', 'Hooks', 'State Management', 'Performance', 'Next.js specific'] },
-    { id: 'react-native', title: 'React Native Exam', topics: ['Basics', 'Hooks', 'State Management', 'React Native specific'] },
-  ],
-  QUESTIONS: [
-    {
-      id: 'react-basic-1',
-      text: 'What is the Virtual DOM and how does it work?',
-      topic: 'Basics',
-      difficulty: 'easy',
-    },
-    {
-      id: 'react-basic-2',
-      text: 'Explain the component lifecycle in React (Class vs Functional).',
-      topic: 'Basics',
-      difficulty: 'medium',
-    },
-    {
-      id: 'react-hook-1',
-      text: 'What is the purpose of useEffect? When does it run?',
-      topic: 'Hooks',
-      difficulty: 'easy',
-    },
-    {
-      id: 'react-hook-2',
-      text: 'Explain useMemo vs useCallback.',
-      topic: 'Hooks',
-      difficulty: 'medium',
-    },
-    {
-      id: 'react-state-1',
-      text: 'What is the difference between specific state types (Local vs Global)?',
-      topic: 'State Management',
-      difficulty: 'easy',
-    },
-    {
-      id: 'rn-basic-1',
-      text: 'What is the difference between View and div?',
-      topic: 'React Native specific',
-      difficulty: 'easy',
-    },
-    {
-      id: 'rn-bridge-1',
-      text: 'Explain the React Native Bridge.',
-      topic: 'React Native specific',
-      difficulty: 'hard',
-    },
-  ]
-};
+type Level = 1 | 2 | 3 | 4 | 5;
+
+interface RawLevel {
+  skill: string;
+  question: string;
+  answer?: string;
+}
+
+interface RawTopicData {
+  topic: string;
+  theme: string;
+  week: string;
+  shortAnswer?: string;
+  codeExample?: string;
+  levels: {
+    [key: string]: RawLevel;
+  };
+}
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Start seeding ...');
 
-  // Clear existing data
-  await prisma.userGrade.deleteMany();
+
+  const jsonPath = path.join(__dirname, '../../RN_Matrix_Final_Corrected.json');
+  console.log(`Loading data from ${jsonPath}`);
+  const rawData = JSON.parse(fs.readFileSync(jsonPath, 'utf-8')) as RawTopicData[];
+
   await prisma.question.deleteMany();
   await prisma.topic.deleteMany();
   await prisma.exam.deleteMany();
 
-  // Create Exams and Topics
-  for (const examData of DATA.EXAMS) {
-    const exam = await prisma.exam.create({
-      data: {
-        id: examData.id,
-        title: examData.title,
+  console.log('Database cleared.');
+
+  for (const item of rawData) {
+    const examId = item.topic.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+
+    await prisma.exam.upsert({
+      where: { id: examId },
+      update: {},
+      create: {
+        id: examId,
+        title: item.topic,
       },
     });
 
-    for (const topicName of examData.topics) {
-      await prisma.topic.create({
-        data: {
-          name: topicName,
-          examId: exam.id,
-        },
-      });
-    }
-  }
-
-  // Create Questions
-  // We need to find the topic ID for each question
-  for (const q of DATA.QUESTIONS) {
-    // Find which exam this topic belongs to.
-    // In our simple model, topics might be duplicated across exams or we need to know which exam the question belongs to.
-    // The data structure in `data.ts` wasn't perfectly normalized.
-    // For now, we'll try to find the topic in ANY exam.
-    // Ideally, questions should belong to a specific context, but here `Basics` exists in both.
-    // Logic: Find the first topic with matching name.
-
-    // Improving logic: Check if question ID suggests exam (react-* vs rn-*)?
-    // Or just pick the first topic found.
-    // "React Native specific" is unique. "Basics" is shared.
-
-    // Heuristic:
-    let examId = 'react';
-    if (q.id.startsWith('rn-')) examId = 'react-native';
-
-    const topic = await prisma.topic.findFirst({
+    const topicName = item.theme.trim();
+    if (!topicName) continue;
+    let topic = await prisma.topic.findFirst({
       where: {
-        name: q.topic,
-        examId: examId
-      }
+        name: topicName,
+        examId: examId,
+      },
     });
 
-    if (topic) {
-      await prisma.question.create({
+    if (!topic) {
+      topic = await prisma.topic.create({
         data: {
-          id: q.id,
-          text: q.text,
-          difficulty: q.difficulty,
-          topicId: topic.id,
-        }
+          name: topicName,
+          examId: examId,
+          week: item.week,
+          shortAnswer: item.shortAnswer || null,
+          codeExample: item.codeExample || null,
+        },
       });
     } else {
-        console.warn(`Topic ${q.topic} not found for question ${q.id} in exam ${examId}`);
+        await prisma.topic.update({
+            where: { id: topic.id },
+            data: {
+                week: item.week,
+                shortAnswer: item.shortAnswer || null,
+                codeExample: item.codeExample || null,
+            }
+        });
+    }
+
+    for (const [levelKey, levelData] of Object.entries(item.levels)) {
+        // Fallback to skill if question is empty, or use a placeholder
+        const textToSave = levelData.question?.trim() || levelData.skill?.trim() || "No question provided";
+
+        const levelNum = parseInt(levelKey);
+        let difficulty = 'easy';
+        if (levelNum === 2) difficulty = 'medium';
+        if (levelNum === 3) difficulty = 'hard';
+        if (levelNum >= 4) difficulty = 'expert';
+
+        const themeSlug = topicName.toLowerCase().replace(/[^a-z0-9-]/g, '-').substring(0, 50); // limit length
+        const questionId = `${examId}-${themeSlug}-${levelKey}`;
+
+        await prisma.question.upsert({
+            where: { id: questionId },
+            update: {
+                text: textToSave,
+                difficulty,
+                answer: levelData.answer || null,
+                week: item.week,
+                skill: levelData.skill,
+                level: levelNum,
+                topicId: topic.id,
+            },
+            create: {
+                id: questionId,
+                text: textToSave,
+                difficulty,
+                answer: levelData.answer || null,
+                week: item.week,
+                skill: levelData.skill,
+                level: levelNum,
+                topicId: topic.id,
+            }
+        });
     }
   }
 

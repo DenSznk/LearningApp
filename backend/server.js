@@ -55,19 +55,63 @@ app.get('/api/questions', async (req, res) => {
 
     // Filter by Exam (implicit: questions -> topic -> examId)
     if (examId) {
-      // If we already filtered by topic, we might not need this if topics are unique to exams,
-      // but they are loosely coupled in our seed logic.
-      // Better to check:
       where.topic = {
         ...where.topic,
         examId: examId
       };
     }
 
+    // Search by Theme (stored as Topic.name) or Text
+    const { search } = req.query;
+    if (search) {
+      where.OR = [
+        { topic: { name: { contains: search } } },
+        { text: { contains: search } }
+      ];
+    }
+
     let questions = await prisma.question.findMany({
       where,
-      include: { topic: true }
+      include: {
+          topic: {
+              include: {
+                  exam: true
+              }
+          }
+      }
     });
+
+    // Deduplicate by Topic (Theme) and group all levels
+    // We want one card per Theme. We prefer Level 1 as the representative.
+    const groupedQuestionsMap = new Map();
+
+    for (const q of questions) {
+        const existing = groupedQuestionsMap.get(q.topicId);
+        if (!existing) {
+            // Initialize with this question as representative, and start the levels array
+            groupedQuestionsMap.set(q.topicId, {
+                representative: q,
+                levels: [q]
+            });
+        } else {
+            // Add to levels array
+            existing.levels.push(q);
+
+            // Update representative if this one is Level 1 (or lower than current representative)
+            if (q.level === 1 && existing.representative.level !== 1) {
+                existing.representative = q;
+            } else if (q.level < existing.representative.level) {
+                 existing.representative = q;
+            }
+        }
+    }
+
+    // Sort levels for each group
+    for (const group of groupedQuestionsMap.values()) {
+        group.levels.sort((a, b) => a.level - b.level);
+    }
+
+    questions = Array.from(groupedQuestionsMap.values());
 
     // Randomize and limit
     // Note: Database level random() is driver specific.
@@ -81,20 +125,100 @@ app.get('/api/questions', async (req, res) => {
     }
 
     // Format for frontend
-    const formatted = questions.map(q => ({
-      id: q.id,
-      text: q.text,
-      difficulty: q.difficulty,
-      topic: q.topic.name,
-      answer: q.answer,
-      week: q.week
-    }));
+    const formatted = questions.map(group => {
+      const q = group.representative;
+      return {
+        id: q.id,
+        text: q.text,
+        difficulty: q.difficulty,
+        topic: q.topic.exam.title, // "JavaScript" (Exam Title)
+        theme: q.topic.name,       // "Event Loop" (Topic Name)
+        answer: q.answer,
+        week: q.week,
+        skill: q.skill,
+        level: q.level,
+        levels: group.levels.map(l => ({
+            id: l.id,
+            text: l.text,
+            difficulty: l.difficulty,
+            answer: l.answer,
+            skill: l.skill,
+            level: l.level
+        }))
+      };
+    });
 
     res.json(formatted);
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Failed to fetch questions' });
   }
+});
+
+// GET /api/skillsets
+// Returns list of skill sets (Themes)
+app.get('/api/skillsets', async (req, res) => {
+    try {
+        const topics = await prisma.topic.findMany({
+            include: { exam: true }
+        });
+
+        const formatted = topics.map(t => ({
+            id: t.id,
+            topic: t.exam.title,
+            theme: t.name,
+            week: t.week
+        }));
+
+        res.json(formatted);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch skill sets' });
+    }
+});
+
+// GET /api/skillsets/:id
+// Returns details of a specific skill set (Theme) including all levels
+app.get('/api/skillsets/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const topic = await prisma.topic.findUnique({
+            where: { id },
+            include: {
+                exam: true,
+                questions: true
+            }
+        });
+
+        if (!topic) {
+            return res.status(404).json({ error: 'Skill set not found' });
+        }
+
+        // Format levels object: { "1": { skill, question }, "2": ... }
+        const levels = {};
+        topic.questions.forEach(q => {
+            levels[q.level] = {
+                skill: q.skill,
+                question: q.text,
+                answer: q.answer
+            };
+        });
+
+        const formatted = {
+            id: topic.id,
+            topic: topic.exam.title,
+            theme: topic.name,
+            week: topic.week,
+            shortAnswer: topic.shortAnswer,
+            codeExample: topic.codeExample,
+            levels
+        };
+
+        res.json(formatted);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch skill set details' });
+    }
 });
 
 app.listen(PORT, () => {
