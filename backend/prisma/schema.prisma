@@ -14,26 +14,40 @@ model Exam {
 }
 
 model Topic {
-  id        String     @id @default(cuid())
-  name      String
-  examId    String
-  exam      Exam       @relation(fields: [examId], references: [id])
-  questions   Question[]
-  week        String?
-  shortAnswer String?
-  codeExample String?
+  id            String         @id @default(cuid())
+  name          String
+  examId        String
+  exam          Exam           @relation(fields: [examId], references: [id])
+  questions     Question[]
+  week          String?
+  shortAnswer   String?
+  codeExample   String?
+  coreConcept   String?
+  practiceTasks PracticeTask[]
 
   @@unique([examId, name])
 }
 
+model PracticeTask {
+  id                  String   @id @default(cuid())
+  topicId             String
+  topic               Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  prompt              String
+  candidateCode       String
+  interviewerSolution String
+  difficulty          String
+  taskType            String
+  createdAt           DateTime @default(now())
+}
+
 model Question {
-  id          String      @id
-  text        String
-  difficulty  String
-  answer      String?
-  week        String?
-  topicId     String
-  topic       Topic       @relation(fields: [topicId], references: [id])
-  skill       String?
-  level       Int         @default(1)
+  id         String  @id
+  text       String
+  difficulty String
+  answer     String?
+  week       String?
+  topicId    String
+  topic      Topic   @relation(fields: [topicId], references: [id])
+  skill      String?
+  level      Int     @default(1)
 }

@@ -154,8 +154,6 @@ export function ExamRunner({ examId }: ExamRunnerProps) {
 
         <QuestionCard
           question={question}
-          showAnswer={showAnswer}
-          onToggleAnswer={() => setShowAnswer(!showAnswer)}
         />
 
         <div className="flex justify-between pt-4">

@@ -11,6 +11,7 @@ import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { QuestionCardSkeleton } from '@/components/exam/QuestionCardSkeleton';
+import GenerateTaskPanel from '@/components/GenerateTaskPanel';
 import {
   Select,
   SelectContent,
@@ -103,10 +104,10 @@ export function QuestionList({ skillSets, showControls = true }: QuestionListPro
               topic: selectedSkillSet.topic,
               theme: selectedSkillSet.theme,
               difficulty: 'easy',
-              level: parseInt(selectedLevelId) as any,
               skill: levelData.skill,
               shortAnswer: selectedSkillSet.shortAnswer,
               codeExample: selectedSkillSet.codeExample,
+              coreConcept: selectedSkillSet.coreConcept,
               answer: levelData.answer,
           };
       }
@@ -153,6 +154,9 @@ export function QuestionList({ skillSets, showControls = true }: QuestionListPro
                    question={activeQuestion as any}
                    className="shadow-none border-0 rounded-none bg-transparent"
                />
+
+               {/* AI Task Generator Panel */}
+               <GenerateTaskPanel topicId={selectedSkillSet.id} />
              </div>
 
              <div className="p-4 border-t bg-muted/20 flex justify-between items-center shrink-0">

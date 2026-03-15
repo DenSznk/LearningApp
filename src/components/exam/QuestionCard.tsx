@@ -37,6 +37,8 @@ export function QuestionCard({ question, className }: QuestionCardProps) {
     }
   };
 
+  const [isCoreConceptExpanded, setIsCoreConceptExpanded] = React.useState(false);
+
   return (
     <Card className={cn("w-full max-w-none mx-auto border shadow-none bg-background", className)}>
       <CardHeader>
@@ -71,6 +73,29 @@ export function QuestionCard({ question, className }: QuestionCardProps) {
           <div className="p-5 bg-muted/40 border rounded-lg text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
             <span className="font-semibold block mb-2 text-foreground">Key Definition</span>
             <ReactMarkdown components={markdownComponents}>{question.shortAnswer}</ReactMarkdown>
+          </div>
+        )}
+
+        {question.coreConcept && (
+          <div className="p-5 bg-[hsl(var(--primary)/0.03)] border border-primary/10 rounded-lg text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none relative">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-semibold text-primary">Core Concept</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => setIsCoreConceptExpanded(!isCoreConceptExpanded)}
+              >
+                {isCoreConceptExpanded ? 'Hide' : 'Expand'}
+              </Button>
+            </div>
+
+            <div className={cn(
+              "overflow-hidden transition-all duration-300 ease-in-out",
+              isCoreConceptExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
+            )}>
+              <ReactMarkdown components={markdownComponents}>{question.coreConcept}</ReactMarkdown>
+            </div>
           </div>
         )}
 

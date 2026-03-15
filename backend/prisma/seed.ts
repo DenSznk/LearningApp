@@ -17,6 +17,7 @@ interface RawTopicData {
   week: string;
   shortAnswer?: string;
   codeExample?: string;
+  coreConcept?: string;
   levels: {
     [key: string]: RawLevel;
   };
@@ -67,6 +68,7 @@ async function main() {
           week: item.week,
           shortAnswer: item.shortAnswer || null,
           codeExample: item.codeExample || null,
+          coreConcept: item.coreConcept || null,
         },
       });
     } else {
@@ -76,6 +78,7 @@ async function main() {
                 week: item.week,
                 shortAnswer: item.shortAnswer || null,
                 codeExample: item.codeExample || null,
+                coreConcept: item.coreConcept || null,
             }
         });
     }

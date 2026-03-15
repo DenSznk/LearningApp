@@ -15,6 +15,7 @@ export interface Question {
   levels?: Question[];
   shortAnswer?: string;
   codeExample?: string;
+  coreConcept?: string;
 }
 
 export interface Topic {
@@ -30,6 +31,7 @@ export interface SkillSet {
   week?: string;
   shortAnswer?: string;
   codeExample?: string;
+  coreConcept?: string;
   levels?: {
     [key: string]: {
       skill: string;
